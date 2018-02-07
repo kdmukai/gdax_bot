@@ -5,7 +5,7 @@ Relies on [gdax-python](https://github.com/danpaquin/gdax-python). Props to [dan
 
 ## Trading Philosophy
 ### GDAX overview; Trading with no fees
-GDAX is a more professional cryptocurrency trading market that underlies Coinbase. If you have a Coinbase account, you have a GDAX account. All trades on Coinbase include a commission fee. But some trades on GDAX are free--specifically if you set your buy or sell price as a limit order. You are the "maker" of an offer and you await a "taker" to accept. The "takers" pay the fees, the "maker" pays none. The tradeoff is that limit orders may or may not be fulfilled; if you're selling X crypto at $Y value and no one likes your price, your sell order won't go anywhere.
+GDAX is a more professional cryptocurrency exchange that underlies Coinbase. If you have a Coinbase account, you have a GDAX account. All trades on Coinbase include a commission fee. But some trades on GDAX are free--specifically if you set your buy or sell price as a limit order. You are the "maker" of an offer and you await a "taker" to accept. The "takers" pay the fees, the "maker" pays none. The tradeoff is that limit orders may or may not be fulfilled; if you're selling X crypto at $Y value and no one likes your price, your sell order won't go anywhere.
 
 ### Basic investing strategy: Dollar Cost Averaging
 You have to be extremely lucky or extremely good to time the market perfectly. Rather than trying to achieve the perfect timing for when to execute a purchase just set up your investment on a regular schedule. Buy X amount every Y days. Sometimes the market will be up, sometimes down. But over time your cache will more closely reflect the average market price with volatile peaks and valleys averaged out.
@@ -34,7 +34,13 @@ If the crypto price keeps increasing, eventually your schedule will run up again
 
 ## Technical Details
 ### Basic approach
-gdax_bot pulls the current market price, subtracts a small spread to generate a valid buy price (see note below), then submits the buy as a limit order.
+gdax_bot pulls the current market price, subtracts a small spread to generate a valid buy price, then submits the buy as a limit order.
+
+### Making a valid limit buy
+Buy orders will be rejected if they are at or above the lowest sell order (think: too far right on the order book). When the price is plummeting this is likely to happen. In this case gdax_bot will pause for a minute and then grab the latest price and re-place the order. It will currently attempt this 100 times before it gives up.
+see: https://stackoverflow.com/a/47447663
+
+*Longer pauses are probably advantageous--if the price is crashing, you don't want to be rushing in.
 
 ### Setup
 #### Create a virtualenv
