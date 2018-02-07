@@ -86,6 +86,16 @@ else:
 public_client = gdax.PublicClient()
 
 
+# Prep boto SNS client for email notifications
+sns = boto3.client(
+    "sns",
+    aws_access_key_id=aws_access_key_id,
+    aws_secret_access_key=aws_secret_access_key,
+    region_name="us-east-1"     # N. Virginia
+)
+
+
+
 """
     Buy orders will be rejected if they are at or above the lowest sell order 
       (think: too far right on the order book). When the price is plummeting
@@ -116,7 +126,7 @@ while cur_attempt <= max_attempts:
     print "crypto_amount: %0.8f" % crypto_amount
     result = auth_client.buy(   type='limit',
                                 post_only=True,      # Ensure that it's treated as a limit order
-                                price=offer_price, # price in fiat
+                                price=offer_price,   # price in fiat
                                 size=crypto_amount,  # cryptocoin quantity
                                 product_id=purchase_pair)
 
@@ -155,13 +165,7 @@ order = result
 order_id = order["id"]
 print "order_id: " + order_id
 
-sns = boto3.client(
-    "sns",
-    aws_access_key_id=aws_access_key_id,
-    aws_secret_access_key=aws_secret_access_key,
-    region_name="us-east-1"     # N. Virginia
-)
-
+# Send notification
 sns.publish(
     TopicArn=sns_topic,
     Subject="$%0.2f buy submitted | %0.4f %s @ $%0.2f" % (fiat_amount, crypto_amount, crypto, current_price),
@@ -169,6 +173,9 @@ sns.publish(
 )
 
 
+'''
+    Wait to see if the limit order was fulfilled.
+'''
 wait_time = 60
 total_wait_time = 0
 while "status" in order and (order["status"] == "pending" or order["status"] == "open"):
@@ -181,13 +188,13 @@ while "status" in order and (order["status"] == "pending" or order["status"] == 
         exit()
 
     print "%s: Order %s still %s. Sleeping for %d (total %d)" % (get_timestamp(), order_id, order["status"], wait_time, total_wait_time)
-    time.sleep(wait_time)      # Wait 60 seconds
+    time.sleep(wait_time)
     total_wait_time += wait_time
     order = auth_client.get_order(order_id)
     print json.dumps(order, sort_keys=True, indent=4)
 
     if "message" in order and order["message"] == "NotFound":
-        # Most likely the order was manually deleted in the UI
+        # Most likely the order was manually cancelled in the UI
         sns.publish(
             TopicArn=sns_topic,
             Subject="$%0.2f buy CANCELLED | %0.4f %s @ $%0.2f" % (fiat_amount, crypto_amount, crypto, current_price),
