@@ -18,18 +18,26 @@ While I believe strongly in dollar cost averaging, the crypto world is so volati
 And because we can do buy orders on GDAX with no fees (so long as they're submitted as limit orders), there's no penalty for splitting an order down to smaller intervals.
 
 ### How far can you push micro dollar cost averaging?
-The current minimum limit order through GDAX's API is 0.01 of the target crypto. This combined with the price gives us the minimum fiat transaction amount.
+GDAX sets different minimum order sizes for each crypto. 
 
-For example, BTC is currently at $6,600 USD. So the smallest possible buy order is 0.01*$6,600 = $66. So if you were looking to invest $300 each month, you're constrained to at most four equal-sized buy orders ($75x4); you couldn't do five equal-sized orders because $300/5 = $60, which would only be 0.009090901 BTC. An order that small would be rejected by the API.
+[Current minimums](https://blog.gdax.com/market-structure-update-2650072c6e3b) as of 2018-01-11 are:
+```
+BTC: 0.001
+ETH: 0.01
+LTC: 0.1
+BCH: 0.01
+```
 
-More interestingly, ETH is currently at $770 USD. So the smallest buy order is $7.70. Now your $300 investment can be split up into 38 equal parts. For simplicity let's just make it one buy per day--30 equal orders of $10.
+This combined with the current market price gives us the minimum fiat transaction amount.
 
-It gets even more fun if you're either looking to invest more money or buy a cheaper crypto. If you have $900 to invest each month, you can split it into 90 equal parts--that's three equal buy orders per day: $10 of ETH every eight hours. If you had $500 to invest in LTC each month (currently at $137), you could go crazy-micro and do $1.39 every other hour! At this point your total average cost basis for your crypto should be just about identical to its average cost for the month.
+For example, let's say BTC is at $8,000 USD. So the smallest possible buy order is ```$8,000*0.001 = $8.00```. So if you were looking to invest $100 each month, you could do ```floor($100/$8) = 12``` equal-sized buy orders; you couldn't do 13 equal-sized orders because ```$100/13 = $7.69``` which would only be 0.00096 BTC. An order that small would be rejected by the API. Spreading out your $100 over 12 buys during the month is pretty good dollar cost averaging.
+
+It gets even more fun if you have more money to invest. Let's say you have $900 and the minimum fiat transaction amount is less than $10. You can split your funds into 90 equal parts--that's three equal buy orders per day: $10 every eight hours. At this point your total average cost basis for your crypto should be just about identical to its average cost for the month.
 
 I'm a big believer in this strategy for smoothing out crypto's short-term volatility while continuing to place your bets on its long-term value.
 
 ### Adjust as prices change
-If the crypto price keeps increasing, eventually your schedule will run up against the minimum purchase order size; you can't buy $1.39 of LTC if the price is greater than $139 (remember there's a 0.01 minimum crypto purchase size). In that case you'll have to increase how much you buy in each order, but decrease the frequency of the orders.
+If the crypto price keeps increasing, eventually your schedule will run up against the minimum purchase order size; you can't buy $13.9 of LTC if the price is greater than $139 (LTC's minimum order size is 0.1). In that case you'll have to increase how much you buy in each order, but decrease the frequency of the orders.
 
 
 ## Technical Details
