@@ -1,6 +1,8 @@
 # gdax_bot
 A basic GDAX buying bot that completes trades from fiat (typical government-backed currency like USD, EUR, etc) to a target crypto asset (BTC, ETH, LTC, BCH).
 
+Relies on [gdax-python](https://github.com/danpaquin/gdax-python). Props to [danpaquin](https://github.com/danpaquin) and thanks!
+
 ## Trading Philosophy
 ### GDAX overview; Trading with no fees
 GDAX is a more professional cryptocurrency trading market that underlies Coinbase. If you have a Coinbase account, you have a GDAX account. All trades on Coinbase include a commission fee. But some trades on GDAX are free--specifically if you set your buy or sell price as a limit order. You are the "maker" of an offer and you await a "taker" to accept. The "takers" pay the fees, the "maker" pays none. The tradeoff is that limit orders may or may not be fulfilled; if you're selling X crypto at $Y value and no one likes your price, your sell order won't go anywhere.
