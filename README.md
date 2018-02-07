@@ -56,7 +56,7 @@ This is out of scope for this document, but generate a set of AWS access keys an
 
 TODO: Make this optional
 
-#### Customize ```settings.conf```
+#### Customize settings
 Update ```settings.conf``` with your API key info in the "sandbox" section. I recommend saving your version as ```settings_local.conf``` as that is already in the ```.gitignore``` so you don't have to worry about committing your sensitive info to your forked repo.
 
 If you have an AWS SNS topic, enter the access keys and SNS topic.
