@@ -34,6 +34,33 @@ If the crypto price keeps increasing, eventually your schedule will run up again
 ### Basic approach
 gdax_bot pulls the current market price, subtracts a small spread to generate a valid buy price (see note below), then submits the buy as a limit order.
 
+### Setup
+#### Create a virtualenv
+There's plenty of info elsewhere for the hows and whys.
+
+#### Install requirements
+```
+pip install -r requirements.txt
+```
+
+#### Create GDAX API key
+Try this out on the sandbox first. Log into your Coinbase/GDAX account in their test sandbox:
+https://public.sandbox.gdax.com
+
+Find and follow existing guides for creating an API key. Only grant the "Trade" permission. Note the passphrase, the new API key, and API key's secret.
+
+#### (Optional) Create an AWS Simple Notification System topic
+This is out of scope for this document, but generate a set of AWS access keys and a new SNS topic to enable the bot to send email reports.
+
+TODO: Make this optional
+
+#### Customize ```settings.conf```
+Update ```settings.conf``` with your API key info in the "sandbox" section. I recommend saving your version as ```settings_local.conf``` as that is already in the ```.gitignore``` so you don't have to worry about committing your sensitive info to your forked repo.
+
+If you have an AWS SNS topic, enter the access keys and SNS topic.
+
+TODO: Read these values from environment vars
+
 ### Scheduling your recurring buys
 This is meant to be run as a crontab to make regular purchases on a set schedule. Here are some example cron jobs:
 
@@ -53,6 +80,17 @@ $5 of LTC every day on every third hour at the 38th minute (i.e. 00:38, 03:38, 0
 ```
 
 Your Coinbase/GDAX account must obviously have enough USD in it to cover the buy order/series of buy orders.
+
+#### Mac notes
+Edit the crontab:
+```
+env EDITOR=nano crontab -e
+```
+
+View the current crontab:
+```
+crontab -l
+```
 
 ## Disclaimer
 I built this to execute my own micro dollar cost-averaging crypto buys. Use and modify it at your own risk. This is also not investment advice. I am not an investment advisor. You should do your own research and invest in the way that best suits your needs and risk profile.
