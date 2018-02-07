@@ -86,6 +86,34 @@ python gdax_bot.py -crypto BTC -fiat_amount 100.00 -sandbox -c ../settings__loca
 Check the sandbox UI and you'll see your limit order listed. Unfortunately your order probably won't fill unless there's other activity in the sandbox.
 
 
+### Usage
+Run ```python gdax_bot.py -h``` for usage information:
+
+```
+usage: gdax_bot.py [-h] [-crypto CRYPTO] [-fiat FIAT_TYPE] -fiat_amount
+                   FIAT_AMOUNT [-price_spread PRICE_SPREAD] [-sandbox]
+                   [-warn_after WARN_AFTER] [-j] [-c CONFIG_FILE]
+
+This is a basic GDAX zero-fee buying bot
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -crypto CRYPTO        Target cryptocurrency
+  -fiat FIAT_TYPE       Fiat currency type to fund buy order (e.g. USD)
+  -fiat_amount FIAT_AMOUNT
+                        Buy order size in fiat
+  -price_spread PRICE_SPREAD
+                        Amount below current market rate to set buy price
+  -sandbox              Run against GDAX sandbox
+  -warn_after WARN_AFTER
+                        Seconds to wait before sending an alert that an order
+                        isn't done
+  -j, --job             Suppresses user confirmation prompt
+  -c CONFIG_FILE, --config CONFIG_FILE
+                        Override default config file location
+```
+
+
 ### Scheduling your recurring buys
 This is meant to be run as a crontab to make regular purchases on a set schedule. Here are some example cron jobs:
 
