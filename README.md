@@ -1,5 +1,5 @@
 # gdax_bot
-A basic GDAX buying bot that completes trades from fiat (typical government-backed currency like USD, EUR, etc) to a target crypto asset (BTC, ETH, LTC, BCH).
+A basic GDAX buying bot that completes trades from fiat (government-backed currency: USD, EUR, GBP) to a target crypto asset (BTC, ETH, LTC, BCH).
 
 Relies on [gdax-python](https://github.com/danpaquin/gdax-python). Props to [danpaquin](https://github.com/danpaquin) and thanks!
 
@@ -37,10 +37,9 @@ If the crypto price keeps increasing, eventually your schedule will run up again
 gdax_bot pulls the current market price, subtracts a small spread to generate a valid buy price, then submits the buy as a limit order.
 
 ### Making a valid limit buy
-Buy orders will be rejected if they are at or above the lowest sell order (think: too far right on the order book). When the price is plummeting this is likely to happen. In this case gdax_bot will pause for a minute and then grab the latest price and re-place the order. It will currently attempt this 100 times before it gives up.
-see: https://stackoverflow.com/a/47447663
+Buy orders will be rejected if they are at or above the lowest sell order (think: too far right on the order book) (see: https://stackoverflow.com/a/47447663). When the price is plummeting this is likely to happen. In this case gdax_bot will pause for a minute and then grab the latest price and re-place the order. It will currently attempt this 100 times before it gives up.
 
-*Longer pauses are probably advantageous--if the price is crashing, you don't want to be rushing in.
+_*Longer pauses are probably advantageous--if the price is crashing, you don't want to be rushing in._
 
 ### Setup
 #### Create a virtualenv
@@ -52,42 +51,61 @@ pip install -r requirements.txt
 ```
 
 #### Create GDAX API key
-Try this out on the sandbox first. Log into your Coinbase/GDAX account in their test sandbox:
+Try this out on GDAX's sandbox first. The sandbox is a test environment that is not connected to your actual fiat or crypto balances.
+
+Log into your Coinbase/GDAX account in their test sandbox:
 https://public.sandbox.gdax.com
 
 Find and follow existing guides for creating an API key. Only grant the "Trade" permission. Note the passphrase, the new API key, and API key's secret.
 
+While you're in the sandbox UI, fund your fiat account by transferring from the absurd fake balance that sits in the linked Coinbase account (remember, this is all just fake test data; no real money or crypto goes through the sandbox).
+
+
 #### (Optional) Create an AWS Simple Notification System topic
 This is out of scope for this document, but generate a set of AWS access keys and a new SNS topic to enable the bot to send email reports.
 
-TODO: Make this optional
+_TODO: Make this optional_
+
 
 #### Customize settings
-Update ```settings.conf``` with your API key info in the "sandbox" section. I recommend saving your version as ```settings_local.conf``` as that is already in the ```.gitignore``` so you don't have to worry about committing your sensitive info to your forked repo.
+Update ```settings.conf``` with your API key info in the "sandbox" section. I recommend saving your version as ```settings__local.conf``` as that is already in the ```.gitignore``` so you don't have to worry about committing your sensitive info to your forked repo.
 
 If you have an AWS SNS topic, enter the access keys and SNS topic.
 
-TODO: Read these values from environment vars
+_TODO: Add support to read these values from environment vars_
+
+
+#### Try a basic test run
+Run against the GDAX sandbox by including the ```-sandbox``` flag. Remember that the sandbox is just test data. The sandbox only supports BTC trading.
+
+Activate your virtualenv and try a basic $100 USD BTC buy:
+```
+python gdax_bot.py -crypto BTC -fiat_amount 100.00 -sandbox -c ../settings__local.conf
+```
+
+Check the sandbox UI and you'll see your limit order listed. Unfortunately your order probably won't fill unless there's other activity in the sandbox.
+
 
 ### Scheduling your recurring buys
 This is meant to be run as a crontab to make regular purchases on a set schedule. Here are some example cron jobs:
 
-$50 of ETH every Monday at 17:23:
+$50 USD of ETH every Monday at 17:23:
 ```
 23 17 * * 1 /your/virtualenv/path/bin/python /your/gdax_bot/path/src/gdax_bot.py -j -crypto ETH -fiat_amount 50.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
-$75 of BTC every other day at 14:00:
+€75 EUR of BTC every other day at 14:00:
 ```
-00 14 */2 * * /your/virtualenv/path/bin/python /your/gdax_bot/path/src/gdax_bot.py -j -crypto BTC -fiat_amount 75.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+00 14 */2 * * /your/virtualenv/path/bin/python /your/gdax_bot/path/src/gdax_bot.py -j -crypto BTC -fiat EUR -fiat_amount 75.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
-$5 of LTC every day on every third hour at the 38th minute (i.e. 00:38, 03:38, 06:38, 09:38, 12:38, 15:38, 18:38, 21:38):
+£5 GBP of LTC every day on every third hour at the 38th minute (i.e. 00:38, 03:38, 06:38, 09:38, 12:38, 15:38, 18:38, 21:38):
 ```
-38 */3 * * * /your/virtualenv/path/bin/python /your/gdax_bot/path/src/gdax_bot.py -j -crypto LTC -fiat_amount 5.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+38 */3 * * * /your/virtualenv/path/bin/python /your/gdax_bot/path/src/gdax_bot.py -j -crypto LTC -fiat GBP -fiat_amount 5.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
 Your Coinbase/GDAX account must obviously have enough USD in it to cover the buy order/series of buy orders.
+
 
 #### Mac notes
 Edit the crontab:
@@ -100,5 +118,6 @@ View the current crontab:
 crontab -l
 ```
 
+
 ## Disclaimer
-I built this to execute my own micro dollar cost-averaging crypto buys. Use and modify it at your own risk. This is also not investment advice. I am not an investment advisor. You should do your own research and invest in the way that best suits your needs and risk profile.
+_I built this to execute my own micro dollar cost-averaging crypto buys. Use and modify it at your own risk. This is also not investment advice. I am not an investment advisor. You should do your own research and invest in the way that best suits your needs and risk profile._
