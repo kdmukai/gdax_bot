@@ -62,7 +62,7 @@ if not sandbox_mode and not job_mode:
         exit()
 
 
-# Read config and set up auth_client
+# Read settings
 config = ConfigParser.SafeConfigParser()
 config.read(args.config_file)
 
@@ -75,8 +75,10 @@ secret = config.get(config_section, 'SECRET_KEY')
 aws_access_key_id = config.get(config_section, 'AWS_ACCESS_KEY_ID')
 aws_secret_access_key = config.get(config_section, 'AWS_SECRET_ACCESS_KEY')
 sns_topic = config.get(config_section, 'SNS_TOPIC')
+min_crypto_amount = float(config.get('gdax_minimums', crypto))
 
 
+# Instantiate public and auth API clients
 if not args.sandbox_mode:
     auth_client = gdax.AuthenticatedClient(key, secret, passphrase)
 else:
@@ -111,7 +113,7 @@ sns = boto3.client(
 max_attempts = 100
 attempt_wait = 60
 cur_attempt = 1
-result = {}
+result = None
 while cur_attempt <= max_attempts:
     # Get the current price...
     ticker = public_client.get_product_ticker(product_id=purchase_pair)
@@ -124,30 +126,43 @@ while cur_attempt <= max_attempts:
     # ...place a limit buy order to avoid taker fees
     crypto_amount = round(fiat_amount / current_price, 8)
     print "crypto_amount: %0.8f" % crypto_amount
-    result = auth_client.buy(   type='limit',
-                                post_only=True,      # Ensure that it's treated as a limit order
-                                price=offer_price,   # price in fiat
-                                size=crypto_amount,  # cryptocoin quantity
-                                product_id=purchase_pair)
 
-    print json.dumps(result, sort_keys=True, indent=4)
+    if crypto_amount >= min_crypto_amount:
+        # Buy amount is over the min threshold, attempt to submit order
+        result = auth_client.buy(   type='limit',
+                                    post_only=True,      # Ensure that it's treated as a limit order
+                                    price=offer_price,   # price in fiat
+                                    size=crypto_amount,  # cryptocoin quantity
+                                    product_id=purchase_pair)
 
-    if "message" in result:
-        # Something went wrong if there's a 'message' field in response
-        sns.publish(
-            TopicArn=sns_topic,
-            Subject="Could not place order for $%0.2f of %s" % (fiat_amount, crypto),
-            Message=json.dumps(result, sort_keys=True, indent=4)
-        )
-        exit()
+        print json.dumps(result, sort_keys=True, indent=4)
+
+        if "message" in result:
+            # Something went wrong if there's a 'message' field in response
+            sns.publish(
+                TopicArn=sns_topic,
+                Subject="Could not place order for $%0.2f of %s" % (fiat_amount, crypto),
+                Message=json.dumps(result, sort_keys=True, indent=4)
+            )
+            exit()
+
+    else:
+        # Order was too small. Will have to try again in the next loop to see
+        #   if the price drops low enough for us to buy at or above the
+        #   minimum order size.
+        print "crypto_amount %0.08f is below the minimum order size (%0.3f)" % (crypto_amount, min_crypto_amount)
+        result = None
+
+    if result and result["status"] != "rejected":
+        break
 
     if result["status"] == "rejected":
-        # Rejected - usually because price was above lowest sell offer
+        # Rejected - usually because price was above lowest sell offer. Try
+        #   again in the next loop.
         print "%s: Order rejected @ $%0.2f" % (get_timestamp(), current_price)
-        time.sleep(attempt_wait)
-        cur_attempt += 1
-    else:
-        break
+
+    time.sleep(attempt_wait)
+    cur_attempt += 1
 
 
 if cur_attempt == max_attempts:
