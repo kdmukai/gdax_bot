@@ -18,7 +18,7 @@ def get_timestamp():
 """
     Basic GDAX buying bot that pulls the current market price, subtracts a small
         spread to generate a valid buy price (see note below), then submits the
-        buy as a limit order which avoids all GDAX fees.
+        buy as a limit order which avoids all GDAX fees. No one likes fees.
 
     Note: GDAX API limits buy size to a minimum of 0.01 of the target crypto.
 
