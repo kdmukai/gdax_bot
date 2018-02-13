@@ -33,10 +33,10 @@ def get_timestamp():
 """
 parser = argparse.ArgumentParser(description='This is a basic GDAX zero-fee buying bot')
 
-parser.add_argument('-crypto', default="ETH", dest="crypto", help="Target cryptocurrency")
-parser.add_argument('-fiat', default="USD", dest="fiat_type", help="Fiat currency type to fund buy order (e.g. USD)")
+parser.add_argument('-crypto', choices=['BTC','ETH','LTC','BCH'], default="ETH", dest="crypto", help="Target cryptocurrency")
+parser.add_argument('-fiat', choices=['USD','EUR','GBP'], default="USD", dest="fiat_type", help="Fiat currency type to fund buy order (e.g. USD)")
 parser.add_argument('-fiat_amount', required=True, action="store", type=float, dest="fiat_amount", help="Buy order size in fiat")
-parser.add_argument('-price_spread', default=0.01, action="store", type=float, dest="price_spread", help="Amount below current market rate to set buy price")
+parser.add_argument('-price_spread', default=0.01, action="store", type=float, dest="price_spread", help="Fiat amount below current market rate to set buy price")
 parser.add_argument('-sandbox', action="store_true", default=False, dest="sandbox_mode", help="Run against GDAX sandbox")
 parser.add_argument('-warn_after', default=3600, action="store", type=int, dest="warn_after", help="Seconds to wait before sending an alert that an order isn't done")
 parser.add_argument('-j', '--job', action="store_true", default=False, dest="job_mode", help="Suppresses user confirmation prompt")
@@ -53,6 +53,13 @@ price_spread = args.price_spread
 sandbox_mode = args.sandbox_mode
 job_mode = args.job_mode
 warn_after = args.warn_after
+
+if fiat_type == 'USD':
+    fiat_symbol = '$'
+elif fiat_type == 'EUR':
+    fiat_symbol = u"\u20ac"
+if fiat_type == 'GBP':
+    fiat_symbol = u"\xA3"
 
 
 if not sandbox_mode and not job_mode:
@@ -141,7 +148,7 @@ while cur_attempt <= max_attempts:
             # Something went wrong if there's a 'message' field in response
             sns.publish(
                 TopicArn=sns_topic,
-                Subject="Could not place order for $%0.2f of %s" % (fiat_amount, crypto),
+                Subject="Could not place order for %s%0.2f of %s" % (fiat_symbol, fiat_amount, crypto),
                 Message=json.dumps(result, sort_keys=True, indent=4)
             )
             exit()
@@ -159,7 +166,7 @@ while cur_attempt <= max_attempts:
     if result["status"] == "rejected":
         # Rejected - usually because price was above lowest sell offer. Try
         #   again in the next loop.
-        print "%s: Order rejected @ $%0.2f" % (get_timestamp(), current_price)
+        print "%s: Order rejected @ %s%0.2f" % (get_timestamp(), fiat_symbol, current_price)
 
     time.sleep(attempt_wait)
     cur_attempt += 1
@@ -169,23 +176,15 @@ if cur_attempt == max_attempts:
     # Was never able to place an order
     sns.publish(
         TopicArn=sns_topic,
-        Subject="Could not place order for $%0.2f of %s after %d attempts" % (fiat_amount, crypto, max_attempts),
+        Subject="Could not place order for %s%0.2f of %s after %d attempts" % (fiat_symbol, fiat_amount, crypto, max_attempts),
         Message=json.dumps(result, sort_keys=True, indent=4)
     )
     exit()
 
 
-
 order = result
 order_id = order["id"]
 print "order_id: " + order_id
-
-# Send notification
-sns.publish(
-    TopicArn=sns_topic,
-    Subject="$%0.2f buy submitted | %0.4f %s @ $%0.2f" % (fiat_amount, crypto_amount, crypto, current_price),
-    Message=json.dumps(result, sort_keys=True, indent=4)
-)
 
 
 '''
@@ -197,7 +196,7 @@ while "status" in order and (order["status"] == "pending" or order["status"] == 
     if total_wait_time > warn_after:
         sns.publish(
             TopicArn=sns_topic,
-            Subject="$%0.2f buy OPEN/UNFILLED | %0.4f %s @ $%0.2f" % (fiat_amount, crypto_amount, crypto, current_price),
+            Subject="%s%0.2f buy OPEN/UNFILLED | %0.4f %s @ %s%0.2f" % (fiat_symbol, fiat_amount, crypto_amount, crypto, fiat_symbol, current_price),
             Message=json.dumps(order, sort_keys=True, indent=4)
         )
         exit()
@@ -212,7 +211,7 @@ while "status" in order and (order["status"] == "pending" or order["status"] == 
         # Most likely the order was manually cancelled in the UI
         sns.publish(
             TopicArn=sns_topic,
-            Subject="$%0.2f buy CANCELLED | %0.4f %s @ $%0.2f" % (fiat_amount, crypto_amount, crypto, current_price),
+            Subject="%s%0.2f buy CANCELLED | %0.4f %s @ %s%0.2f" % (fiat_symbol, fiat_amount, crypto_amount, crypto, fiat_symbol, current_price),
             Message=json.dumps(result, sort_keys=True, indent=4)
         )
         exit()
@@ -221,11 +220,11 @@ while "status" in order and (order["status"] == "pending" or order["status"] == 
 # Order status is no longer pending!
 sns.publish(
     TopicArn=sns_topic,
-    Subject="$%0.2f buy %s | %0.4f %s @ $%0.2f" % (fiat_amount, order["status"], crypto_amount, crypto, current_price),
+    Subject="%s%0.2f buy %s | %0.4f %s @ %s%0.2f" % (fiat_symbol, fiat_amount, order["status"], crypto_amount, crypto, fiat_symbol, current_price),
     Message=json.dumps(order, sort_keys=True, indent=4)
 )
 
-print "%s: DONE: $%0.2f buy %s | %0.4f %s @ $%0.2f" % (get_timestamp(), fiat_amount, order["status"], crypto_amount, crypto, current_price)
+print "%s: DONE: %s%0.2f buy %s | %0.4f %s @ %s%0.2f" % (get_timestamp(), fiat_symbol, fiat_amount, order["status"], crypto_amount, crypto, fiat_symbol, current_price)
 
 
 
