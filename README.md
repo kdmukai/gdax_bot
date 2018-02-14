@@ -5,7 +5,7 @@ Relies on [gdax-python](https://github.com/danpaquin/gdax-python). Props to [dan
 
 ## Trading Philosophy
 ### GDAX overview; Trading with no fees
-GDAX is a more professional cryptocurrency exchange that underlies Coinbase. If you have a Coinbase account, you have a GDAX account. All trades on Coinbase include a commission fee. But some trades on GDAX are free--specifically if you set your buy or sell price as a limit order. You are the "maker" of an offer and you await a "taker" to accept. The "takers" pay the fees, the "maker" pays none. The tradeoff is that limit orders may or may not be fulfilled; if you're selling X crypto at $Y value and no one likes your price, your sell order won't go anywhere.
+GDAX is the more professional cryptocurrency exchange that underlies Coinbase. If you have a Coinbase account, you have a GDAX account ([create a Coinbase account](https://www.coinbase.com/join/59384a753bfa9c00d764ac76)). All trades on Coinbase include a commission fee. But some trades on GDAX are free--specifically if you set your buy or sell price as a limit order. You are the "maker" of an offer and you await a "taker" to accept. The "takers" pay the fees, the "maker" pays none. The tradeoff is that limit orders may or may not be fulfilled; if you're selling X crypto at $Y value and no one likes your price, your sell order won't go anywhere.
 
 ### Basic investing strategy: Dollar Cost Averaging
 You have to be extremely lucky or extremely good to time the market perfectly. Rather than trying to achieve the perfect timing for when to execute a purchase just set up your investment on a regular schedule. Buy X amount every Y days. Sometimes the market will be up, sometimes down. But over time your cache will more closely reflect the average market price with volatile peaks and valleys averaged out.
@@ -50,6 +50,10 @@ Buy orders will be rejected if they are at or above the lowest sell order (think
 _*Longer pauses are probably advantageous--if the price is crashing, you don't want to be rushing in._
 
 ### Setup
+#### Create a Coinbase account
+Use my referral code and we'll both get $10 worth of BTC:  
+https://www.coinbase.com/join/59384a753bfa9c00d764ac76
+
 #### Create a virtualenv
 There's plenty of info elsewhere for the hows and whys.
 
@@ -127,17 +131,18 @@ This is meant to be run as a crontab to make regular purchases on a set schedule
 
 $50 USD of ETH every Monday at 17:23:
 ```
-23 17 * * 1 /your/virtualenv/path/bin/python /your/gdax_bot/path/src/gdax_bot.py -j -crypto ETH -fiat_amount 50.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+23 17 * * 1 /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j -crypto ETH -fiat_amount 50.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
+*The ```-u``` option makes python output ```stdout``` and ```stderr``` unbuffered so that you can watch the progress in real time by running ```tail -f cron.log```.*
 
 €75 EUR of BTC every other day at 14:00:
 ```
-00 14 */2 * * /your/virtualenv/path/bin/python /your/gdax_bot/path/src/gdax_bot.py -j -crypto BTC -fiat EUR -fiat_amount 75.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+00 14 */2 * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j -crypto BTC -fiat EUR -fiat_amount 75.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
 £5 GBP of LTC every day on every third hour at the 38th minute (i.e. 00:38, 03:38, 06:38, 09:38, 12:38, 15:38, 18:38, 21:38):
 ```
-38 */3 * * * /your/virtualenv/path/bin/python /your/gdax_bot/path/src/gdax_bot.py -j -crypto LTC -fiat GBP -fiat_amount 5.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+38 */3 * * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j -crypto LTC -fiat GBP -fiat_amount 5.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
 Your Coinbase/GDAX account must obviously have enough USD in it to cover the buy order/series of buy orders.
@@ -157,3 +162,11 @@ crontab -l
 
 ## Disclaimer
 _I built this to execute my own micro dollar cost-averaging crypto buys. Use and modify it at your own risk. This is also not investment advice. I am not an investment advisor. You should do your own research and invest in the way that best suits your needs and risk profile.  Good luck and HODL strong._
+
+
+# Tips
+If you found this useful, send me some digital love
+- ETH: 0xb581603e2C4eb9a9Ece4476685f0600CeB472241
+- BTC: 13u1YbpSzNsvVpPMyzaDAfzP2jRcZUwh96
+- LTC: LMtPGHCQ3as6AEC9ueX4tVQw7GvHegv3fA
+- DASH: XhCnytvKkV44Mn5WeajGfaifgY8vGtamW4
