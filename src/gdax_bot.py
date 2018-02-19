@@ -157,22 +157,22 @@ while cur_attempt <= max_attempts:
         # Order was too small. Will have to try again in the next loop to see
         #   if the price drops low enough for us to buy at or above the
         #   minimum order size.
-        print "crypto_amount %0.08f is below the minimum order size (%0.3f)" % (crypto_amount, min_crypto_amount)
+        print "crypto_amount %0.08f is below the minimum %s order size (%0.3f)" % (crypto_amount, crypto, min_crypto_amount)
         result = None
 
     if result and result["status"] != "rejected":
         break
 
-    if result["status"] == "rejected":
+    if result and result["status"] == "rejected":
         # Rejected - usually because price was above lowest sell offer. Try
         #   again in the next loop.
-        print "%s: Order rejected @ %s%0.2f" % (get_timestamp(), fiat_symbol, current_price)
+        print "%s: %s Order rejected @ %s%0.2f" % (get_timestamp(), crypto, fiat_symbol, current_price)
 
     time.sleep(attempt_wait)
     cur_attempt += 1
 
 
-if cur_attempt == max_attempts:
+if cur_attempt > max_attempts:
     # Was never able to place an order
     sns.publish(
         TopicArn=sns_topic,
