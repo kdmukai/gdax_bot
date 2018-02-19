@@ -148,6 +148,15 @@ $50 USD of ETH every Monday at 17:23:
 Your Coinbase/GDAX account must obviously have enough USD in it to cover the buy order/series of buy orders.
 
 
+### Unfilled orders will happen
+The volatility may quickly carry the market away from you. Here we see a bunch of unfilled orders that are well below the current market price of $887.86:
+![alt text](https://github.com/kdmukai/gdax_bot/blob/master/docs/img/gdax_unfilled_orders.png "Logo Title Text 1")
+
+The gdax_bot will keep checking on the status of the order for up to an hour, after which it will report it as OPEN/UNFILLED. Hopefully the market will cool down again and return to your order's price, at which point it will fill (though gdax_bot will not send a notification). You can also manually cancel the order to free up the reserved fiat again. 
+
+I would recommend patience and let the unfilled order ride for a few hours or days. With micro dollar cost averaging it doesn't really matter if you miss a few buy orders.
+
+
 #### Mac notes
 Edit the crontab:
 ```
