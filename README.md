@@ -150,7 +150,7 @@ Your Coinbase/GDAX account must obviously have enough USD in it to cover the buy
 
 ### Unfilled orders will happen
 The volatility may quickly carry the market away from you. Here we see a bunch of unfilled orders that are well below the current market price of $887.86:
-![alt text](https://github.com/kdmukai/gdax_bot/blob/master/docs/img/gdax_unfilled_orders.png "Logo Title Text 1")
+![alt text](https://github.com/kdmukai/gdax_bot/blob/master/docs/img/gdax_unfilled_orders.png "Unfilled gdax_bot orders")
 
 The gdax_bot will keep checking on the status of the order for up to an hour, after which it will report it as OPEN/UNFILLED. Hopefully the market will cool down again and return to your order's price, at which point it will fill (though gdax_bot will not send a notification). You can also manually cancel the order to free up the reserved fiat again. 
 
