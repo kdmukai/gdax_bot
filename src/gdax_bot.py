@@ -5,6 +5,7 @@ import ConfigParser
 import boto3
 import datetime
 import json
+import sys
 import time
 
 import gdax
@@ -78,7 +79,7 @@ parser.add_argument('-c', '--config',
                     help="Override default config file location")
 
 args = parser.parse_args()
-print "%s: STARTED: %s" % (get_timestamp(), args)
+print("%s: STARTED: %s" % (get_timestamp(), args))
 
 crypto = args.crypto
 fiat_type = args.fiat_type
@@ -98,9 +99,13 @@ if fiat_type == 'GBP':
 
 
 if not sandbox_mode and not job_mode:
-    response = raw_input("Production purchase! Confirm [Y]: ")
+    if sys.version_info[0] < 3:
+        # python2.x compatibility
+        response = raw_input("Production purchase! Confirm [Y]: ")  # noqa: F821
+    else:
+        response = input("Production purchase! Confirm [Y]: ")
     if response != 'Y':
-        print "Exiting without submitting purchase."
+        print("Exiting without submitting purchase.")
         exit()
 
 
@@ -178,11 +183,11 @@ while cur_attempt <= max_attempts:
 
     # Can't submit a buy order at or above current market price
     offer_price = round(current_price - price_spread, 2)
-    print "offer_price: %0.2f" % offer_price
+    print("offer_price: %0.2f") % offer_price
 
     # ...place a limit buy order to avoid taker fees
     crypto_amount = round(fiat_amount / current_price, 8)
-    print "crypto_amount: %0.8f" % crypto_amount
+    print("crypto_amount: %0.8f") % crypto_amount
 
     if crypto_amount >= min_crypto_amount:
         # Buy amount is over the min threshold, attempt to submit order
@@ -192,7 +197,7 @@ while cur_attempt <= max_attempts:
                                     size=crypto_amount,  # cryptocoin quantity
                                     product_id=purchase_pair)
 
-        print json.dumps(result, sort_keys=True, indent=4)
+        print(json.dumps(result, sort_keys=True, indent=4))
 
         if "message" in result:
             # Something went wrong if there's a 'message' field in response
@@ -207,7 +212,7 @@ while cur_attempt <= max_attempts:
         # Order was too small. Will have to try again in the next loop to see
         #   if the price drops low enough for us to buy at or above the
         #   minimum order size.
-        print "crypto_amount %0.08f is below the minimum %s order size (%0.3f)" % (crypto_amount, crypto, min_crypto_amount)
+        print("crypto_amount %0.08f is below the minimum %s order size (%0.3f)" % (crypto_amount, crypto, min_crypto_amount))
         result = None
 
     if result and result["status"] != "rejected":
@@ -216,7 +221,7 @@ while cur_attempt <= max_attempts:
     if result and result["status"] == "rejected":
         # Rejected - usually because price was above lowest sell offer. Try
         #   again in the next loop.
-        print "%s: %s Order rejected @ %s%0.2f" % (get_timestamp(), crypto, fiat_symbol, current_price)
+        print("%s: %s Order rejected @ %s%0.2f" % (get_timestamp(), crypto, fiat_symbol, current_price))
 
     time.sleep(attempt_wait)
     cur_attempt += 1
@@ -234,7 +239,7 @@ if cur_attempt > max_attempts:
 
 order = result
 order_id = order["id"]
-print "order_id: " + order_id
+print("order_id: " + order_id)
 
 
 '''
@@ -252,22 +257,22 @@ while ("status" in order
         )
         exit()
 
-    print "%s: Order %s still %s. Sleeping for %d (total %d)" % (
+    print("%s: Order %s still %s. Sleeping for %d (total %d)" % (
         get_timestamp(),
         order_id,
         order["status"],
         wait_time,
-        total_wait_time)
+        total_wait_time))
     time.sleep(wait_time)
     total_wait_time += wait_time
     order = auth_client.get_order(order_id)
-    print json.dumps(order, sort_keys=True, indent=4)
+    # print(json.dumps(order, sort_keys=True, indent=4))
 
     if "message" in order and order["message"] == "NotFound":
         # Most likely the order was manually cancelled in the UI
         sns.publish(
             TopicArn=sns_topic,
-            Subject="%s%0.2f buy CANCELLED | %0.4f %s @ %s%0.2f" % (fiat_symbol, fiat_amount, crypto_amount, crypto, fiat_symbol, current_price),
+            Subject="%s%0.2f buy CANCELED | %0.4f %s @ %s%0.2f" % (fiat_symbol, fiat_amount, crypto_amount, crypto, fiat_symbol, current_price),
             Message=json.dumps(result, sort_keys=True, indent=4)
         )
         exit()
@@ -287,7 +292,7 @@ sns.publish(
     Message=json.dumps(order, sort_keys=True, indent=4)
 )
 
-print "%s: DONE: %s%0.2f buy %s | %0.4f %s @ %s%0.2f" % (
+print("%s: DONE: %s%0.2f buy %s | %0.4f %s @ %s%0.2f" % (
     get_timestamp(),
     fiat_symbol,
     fiat_amount,
@@ -295,4 +300,4 @@ print "%s: DONE: %s%0.2f buy %s | %0.4f %s @ %s%0.2f" % (
     crypto_amount,
     crypto,
     fiat_symbol,
-    current_price)
+    current_price))
