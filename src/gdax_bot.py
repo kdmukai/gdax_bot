@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-import ConfigParser
+import configparser
 import boto3
 import datetime
 import json
@@ -110,7 +110,7 @@ if not sandbox_mode and not job_mode:
 
 
 # Read settings
-config = ConfigParser.SafeConfigParser()
+config = configparser.SafeConfigParser()
 config.read(args.config_file)
 
 config_section = 'production'
@@ -134,7 +134,7 @@ else:
         key,
         secret,
         passphrase,
-        api_url="https://api-public.sandbox.gdax.com")
+        api_url="https://api-public.sandbox.pro.coinbase.com")
 
 public_client = gdax.PublicClient()
 
@@ -183,11 +183,11 @@ while cur_attempt <= max_attempts:
 
     # Can't submit a buy order at or above current market price
     offer_price = round(current_price - price_spread, 2)
-    print("offer_price: %0.2f") % offer_price
+    print("offer_price: %0.2f" % offer_price)
 
     # ...place a limit buy order to avoid taker fees
     crypto_amount = round(fiat_amount / current_price, 8)
-    print("crypto_amount: %0.8f") % crypto_amount
+    print("crypto_amount: %0.8f" % crypto_amount)
 
     if crypto_amount >= min_crypto_amount:
         # Buy amount is over the min threshold, attempt to submit order
