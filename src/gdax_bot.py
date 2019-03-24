@@ -211,12 +211,10 @@ if __name__ == "__main__":
         crypto_amount = fiat_amount / current_price
         print("crypto_amount: %0.8f" % crypto_amount)
 
-        # Have to round to the crypto's `base_min_size` precision
-        exp = base_min_size
-        if base_min_size < Decimal('1.0'):
-            exp = Decimal(10.0) ** Decimal(base_min_size.as_tuple().exponent)
-        crypto_amount = crypto_amount.quantize(exp)
-        print("crypto_amount: %0.8f" % crypto_amount)
+        if base_min_size == Decimal('1.0'):
+            # Have to round order amount to a whole number
+            crypto_amount = round(crypto_amount)
+            print("crypto_amount: %0.8f" % crypto_amount)
 
         if crypto_amount > Decimal('0.0'):
             # Buy amount is over the min threshold, attempt to submit order
