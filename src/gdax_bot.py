@@ -221,7 +221,7 @@ if __name__ == "__main__":
             result = auth_client.buy(   type='limit',
                                         post_only=True,             # Ensure that it's treated as a limit order
                                         price=float(offer_price),   # price in fiat
-                                        size=float(crypto_amount),  # cryptocoin quantity
+                                        size=round(float(crypto_amount), 8),  # cryptocoin quantity
                                         product_id=purchase_pair)
 
             print(json.dumps(result, sort_keys=True, indent=4))
