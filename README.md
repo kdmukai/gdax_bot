@@ -26,6 +26,7 @@ BTC: 0.001
 ETH: 0.01
 LTC: 0.1
 BCH: 0.01
+XLM: 1.0
 ```
 
 This combined with the current market price gives us the minimum fiat transaction amount.
@@ -80,7 +81,7 @@ _TODO: Make this optional_
 
 
 #### Customize settings
-Update ```settings.conf``` with your API key info in the "sandbox" section. I recommend saving your version as ```settings__local.conf``` as that is already in the ```.gitignore``` so you don't have to worry about committing your sensitive info to your forked repo.
+Update ```settings.conf``` with your API key info in the "sandbox" section. I recommend saving your version as ```settings-local.conf``` as that is already in the ```.gitignore``` so you don't have to worry about committing your sensitive info to your forked repo.
 
 If you have an AWS SNS topic, enter the access keys and SNS topic.
 
@@ -92,7 +93,7 @@ Run against the GDAX sandbox by including the ```-sandbox``` flag. Remember that
 
 Activate your virtualenv and try a basic $100 USD BTC buy:
 ```
-python gdax_bot.py -crypto BTC -fiat_amount 100.00 -sandbox -c ../settings__local.conf
+python gdax_bot.py -crypto BTC -fiat_amount 100.00 -sandbox -c ../settings-local.conf
 ```
 
 Check the sandbox UI and you'll see your limit order listed. Unfortunately your order probably won't fill unless there's other activity in the sandbox.
