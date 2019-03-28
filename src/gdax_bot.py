@@ -38,7 +38,7 @@ parser = argparse.ArgumentParser(
     description='This is a basic GDAX zero-fee buying bot')
 
 parser.add_argument('-crypto',
-                    choices=['BTC', 'ETH', 'LTC', 'XLM', 'BCH'],
+                    choices=['BTC', 'ETH', 'XLM', 'LTC', 'BCH', 'ZRX'],
                     required=True,
                     dest="crypto",
                     help="Target cryptocurrency")
