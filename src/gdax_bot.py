@@ -128,6 +128,8 @@ if __name__ == "__main__":
     aws_secret_access_key = config.get(config_section, 'AWS_SECRET_ACCESS_KEY')
     sns_topic = config.get(config_section, 'SNS_TOPIC')
 
+    smallest_unit = Decimal(config.get('smallest_units', crypto))
+
     # Instantiate public and auth API clients
     if not args.sandbox_mode:
         auth_client = gdax.AuthenticatedClient(key, secret, passphrase)
@@ -149,6 +151,7 @@ if __name__ == "__main__":
         if product.get("id") == purchase_pair:
             base_min_size = Decimal(product.get("base_min_size"))
             quote_increment = Decimal(product.get("quote_increment"))
+            print(product)
 
     print("base_min_size: %f" % base_min_size)
     print("quote_increment: %f" % quote_increment)
@@ -208,13 +211,10 @@ if __name__ == "__main__":
         print("offer_price: $%0.6f" % offer_price)
 
         # ...place a limit buy order to avoid taker fees
-        crypto_amount = fiat_amount / current_price
+        # Quantize by the smallest_unit limitation (in some cases this is as large as 1.0)
+        exp = Decimal(10.0) ** Decimal(smallest_unit.as_tuple().exponent)
+        crypto_amount = (fiat_amount / current_price).quantize(exp)
         print("crypto_amount: %0.8f" % crypto_amount)
-
-        if base_min_size == Decimal('1.0'):
-            # Have to round order amount to a whole number
-            crypto_amount = round(crypto_amount)
-            print("crypto_amount: %0.8f" % crypto_amount)
 
         if crypto_amount > Decimal('0.0'):
             # Buy amount is over the min threshold, attempt to submit order
