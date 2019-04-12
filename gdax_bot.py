@@ -35,7 +35,7 @@ def get_timestamp():
         the buy order/series of buy orders.
 """
 parser = argparse.ArgumentParser(
-    description='This is a basic GDAX zero-fee buying bot')
+    description='This is a basic Coinbase Pro buying bot')
 
 parser.add_argument('-crypto',
                     choices=['BTC', 'ETH', 'XLM', 'LTC', 'BCH', 'ZRX', 'EOS'],
@@ -55,12 +55,6 @@ parser.add_argument('-fiat',
                     default="USD",
                     dest="fiat_type",
                     help="Fiat currency type to fund buy order (e.g. USD)")
-parser.add_argument('-price_spread',
-                    default=Decimal('0.01'),
-                    action="store",
-                    type=Decimal,
-                    dest="price_spread",
-                    help="Fiat amount below current market rate to set buy price")
 parser.add_argument('-sandbox',
                     action="store_true",
                     default=False,
@@ -99,9 +93,8 @@ if __name__ == "__main__":
         fiat_symbol = '$'
     elif fiat_type == 'EUR':
         fiat_symbol = u"\u20ac"
-    if fiat_type == 'GBP':
+    elif fiat_type == 'GBP':
         fiat_symbol = u"\xA3"
-
 
     if not sandbox_mode and not job_mode:
         if sys.version_info[0] < 3:
@@ -112,7 +105,6 @@ if __name__ == "__main__":
         if response != 'Y':
             print("Exiting without submitting purchase.")
             exit()
-
 
     # Read settings
     config = configparser.ConfigParser()
@@ -149,12 +141,12 @@ if __name__ == "__main__":
     quote_increment = None
     for product in products:
         if product.get("id") == purchase_pair:
-            base_min_size = Decimal(product.get("base_min_size"))
-            quote_increment = Decimal(product.get("quote_increment"))
+            base_min_size = Decimal(product.get("base_min_size")).normalize()
+            quote_increment = Decimal(product.get("quote_increment")).normalize()
             print(product)
 
-    print("base_min_size: %f" % base_min_size)
-    print("quote_increment: %f" % quote_increment)
+    print("base_min_size: %s" % base_min_size)
+    print("quote_increment: %s" % quote_increment)
 
     # Prep boto SNS client for email notifications
     sns = boto3.client(
@@ -197,31 +189,27 @@ if __name__ == "__main__":
             exit()
 
         current_price = Decimal(ticker['price'])
-        print("current_price: $%0.6f" % current_price)
+        bid = Decimal(ticker['bid'])
+        ask = Decimal(ticker['ask'])
+        midmarket_price = ((ask + bid) / Decimal('2.0')).quantize(quote_increment, decimal.ROUND_DOWN)
+        print("bid: $%s" % bid)
+        print("ask: $%s" % ask)
+        print("midmarket_price: $%s" % midmarket_price)
 
-        # Can't submit a buy order at or above current market price
-        offer_price = current_price - price_spread
-        print("offer_price: $%0.6f" % offer_price)
-
-        # Have to round to the crypto's `quote_increment` precision
-        exp = quote_increment
-        if quote_increment < Decimal('1.0'):
-            exp = Decimal(10.0) ** Decimal(quote_increment.as_tuple().exponent)
-        offer_price = offer_price.quantize(exp)
-        print("offer_price: $%0.6f" % offer_price)
+        offer_price = midmarket_price
+        print("offer_price: $%s" % offer_price)
 
         # ...place a limit buy order to avoid taker fees
-        # Quantize by the smallest_unit limitation (in some cases this is as large as 1.0)
-        exp = Decimal(10.0) ** Decimal(smallest_unit.as_tuple().exponent)
-        crypto_amount = (fiat_amount / current_price).quantize(exp)
-        print("crypto_amount: %0.8f" % crypto_amount)
+        # Quantize by the smallest_unit limitation (in some cases this is as large as 1)
+        crypto_amount = (fiat_amount / current_price).quantize(smallest_unit)
+        print("crypto_amount: %s" % crypto_amount)
 
         if crypto_amount > Decimal('0.0'):
             # Buy amount is over the min threshold, attempt to submit order
             result = auth_client.buy(   type='limit',
                                         post_only=True,             # Ensure that it's treated as a limit order
                                         price=float(offer_price),   # price in fiat
-                                        size=round(float(crypto_amount), 8),  # cryptocoin quantity
+                                        size=float(crypto_amount),  # cryptocoin quantity
                                         product_id=purchase_pair)
 
             print(json.dumps(result, sort_keys=True, indent=4))
