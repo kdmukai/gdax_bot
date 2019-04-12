@@ -266,7 +266,7 @@ if __name__ == "__main__":
         if total_wait_time > warn_after:
             sns.publish(
                 TopicArn=sns_topic,
-                Subject="%s%0.2f buy OPEN/UNFILLED | %0.4f %s @ %s%0.2f" % (fiat_symbol, fiat_amount, crypto_amount, crypto, fiat_symbol, current_price),
+                Subject="%s%0.2f buy OPEN/UNFILLED | %s %s @ %s%s" % (fiat_symbol, fiat_amount, crypto_amount, crypto, fiat_symbol, offer_price),
                 Message=json.dumps(order, sort_keys=True, indent=4)
             )
             exit()
@@ -286,7 +286,7 @@ if __name__ == "__main__":
             # Most likely the order was manually cancelled in the UI
             sns.publish(
                 TopicArn=sns_topic,
-                Subject="%s%0.2f buy CANCELED | %0.4f %s @ %s%0.2f" % (fiat_symbol, fiat_amount, crypto_amount, crypto, fiat_symbol, current_price),
+                Subject="%s%0.2f buy CANCELED | %s %s @ %s%s" % (fiat_symbol, fiat_amount, crypto_amount, crypto, fiat_symbol, offer_price),
                 Message=json.dumps(result, sort_keys=True, indent=4)
             )
             exit()
@@ -295,18 +295,18 @@ if __name__ == "__main__":
     # Order status is no longer pending!
     sns.publish(
         TopicArn=sns_topic,
-        Subject="%s%0.2f buy %s | %0.4f %s @ %s%0.2f" % (
+        Subject="%s%s buy %s | %s %s @ %s%s" % (
             fiat_symbol,
             fiat_amount,
             order["status"],
             crypto_amount,
             crypto,
             fiat_symbol,
-            current_price),
+            offer_price),
         Message=json.dumps(order, sort_keys=True, indent=4)
     )
 
-    print("%s: DONE: %s%0.2f buy %s | %0.4f %s @ %s%0.2f" % (
+    print("%s: DONE: %s%0.2f buy %s | %s %s @ %s%s" % (
         get_timestamp(),
         fiat_symbol,
         fiat_amount,
@@ -314,4 +314,4 @@ if __name__ == "__main__":
         crypto_amount,
         crypto,
         fiat_symbol,
-        current_price))
+        offer_price))
