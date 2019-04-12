@@ -84,7 +84,6 @@ if __name__ == "__main__":
     fiat_type = args.fiat_type
     purchase_pair = "%s-%s" % (crypto, fiat_type)
     fiat_amount = args.fiat_amount
-    price_spread = args.price_spread
     sandbox_mode = args.sandbox_mode
     job_mode = args.job_mode
     warn_after = args.warn_after
