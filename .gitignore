@@ -1,6 +1,7 @@
 
 cron.log
 
-settings__local.conf
-settings-local.conf
+settings.conf
+
 *.bat
+settings.conf

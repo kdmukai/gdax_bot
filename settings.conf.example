@@ -1,0 +1,24 @@
+[sandbox]
+PASSPHRASE = your_gdax_sandbox_api_passphrase
+API_KEY = your_gdax_sandbox_api_key
+SECRET_KEY = your_gdax_sandbox_secret_key
+SNS_TOPIC = your_aws_sns_topic_arn
+AWS_ACCESS_KEY_ID = your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY = your_aws_secret_access_key
+
+
+[production]
+PASSPHRASE = your_gdax_api_passphrase
+API_KEY = your_gdax_api_key
+SECRET_KEY = your_gdax_secret_key
+SNS_TOPIC = your_aws_sns_topic_arn
+AWS_ACCESS_KEY_ID = your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY = your_aws_secret_access_key
+
+
+[smallest_units]
+BTC = 0.00000001
+ETH = 0.00000001
+XLM = 1
+LTC = 0.00000001
+ZRX = 0.00001

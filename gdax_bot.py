@@ -38,7 +38,7 @@ parser = argparse.ArgumentParser(
     description='This is a basic GDAX zero-fee buying bot')
 
 parser.add_argument('-crypto',
-                    choices=['BTC', 'ETH', 'XLM', 'LTC', 'BCH', 'ZRX'],
+                    choices=['BTC', 'ETH', 'XLM', 'LTC', 'BCH', 'ZRX', 'EOS'],
                     required=True,
                     dest="crypto",
                     help="Target cryptocurrency")
@@ -78,7 +78,7 @@ parser.add_argument('-j', '--job',
                     dest="job_mode",
                     help="Suppresses user confirmation prompt")
 parser.add_argument('-c', '--config',
-                    default="../settings.conf",
+                    default="settings.conf",
                     dest="config_file",
                     help="Override default config file location")
 
