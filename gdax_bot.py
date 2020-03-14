@@ -267,7 +267,7 @@ if __name__ == "__main__":
     wait_time = 60
     total_wait_time = 0
     while "status" in order and \
-            (order["status"] == "pending" or order["status"] == "open")):
+            (order["status"] == "pending" or order["status"] == "open"):
         if total_wait_time > warn_after:
             sns.publish(
                 TopicArn=sns_topic,
