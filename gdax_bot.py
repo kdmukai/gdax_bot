@@ -213,7 +213,12 @@ if __name__ == "__main__":
 
             print(json.dumps(result, sort_keys=True, indent=4))
 
-            if "message" in result:
+            if "message" in result and "Post only mode" in result.get("message"):
+                # Price moved away from valid order
+                print("Post only mode at $%0.2f" % (offer_price))
+                continue
+
+            elif "message" in result:
                 # Something went wrong if there's a 'message' field in response
                 sns.publish(
                     TopicArn=sns_topic,
@@ -261,8 +266,8 @@ if __name__ == "__main__":
     '''
     wait_time = 60
     total_wait_time = 0
-    while ("status" in order
-            and (order["status"] == "pending" or order["status"] == "open")):
+    while "status" in order and \
+            (order["status"] == "pending" or order["status"] == "open")):
         if total_wait_time > warn_after:
             sns.publish(
                 TopicArn=sns_topic,
