@@ -1,11 +1,13 @@
 # gdax_bot
-A basic GDAX buying bot that completes trades from fiat (government-backed currency: USD, EUR, GBP) to a target crypto asset (BTC, ETH, LTC, BCH).
+A basic Coinbase Pro buying bot that completes trades in any of their available market pairings
 
 Relies on [gdax-python](https://github.com/danpaquin/gdax-python). Props to [danpaquin](https://github.com/danpaquin) and thanks!
 
 ## Trading Philosophy
-### GDAX overview; Trading with no fees
-GDAX is the more professional cryptocurrency exchange that underlies Coinbase. If you have a Coinbase account, you have a GDAX account ([create a Coinbase account](https://www.coinbase.com/join/59384a753bfa9c00d764ac76)). All trades on Coinbase include a commission fee. But some trades on GDAX are free--specifically if you set your buy or sell price as a limit order. You are the "maker" of an offer and you await a "taker" to accept. The "takers" pay the fees, the "maker" pays none. The tradeoff is that limit orders may or may not be fulfilled; if you're selling X crypto at $Y value and no one likes your price, your sell order won't go anywhere.
+### Coinbase Pro overview
+Coinbase Pro is the more professional cryptocurrency exchange that underlies Coinbase. If you have a Coinbase account, you have a Coinbase Pro account ([create a Coinbase account](https://www.coinbase.com/join/59384a753bfa9c00d764ac76)). All trades on Coinbase include expensive tiered flat fees ($0.99+/tx) or 1.49%, plus a 0.5% spread on the market price (or up to 2% spread on crypto-to-crypto trades). Ouch.
+
+But some trades on Coinbase Pro can be made at a greatly reduced rate (0.5%) or even free, depending on your transaction tier over the last 30 days. You just have to submit your buy or sell as a limit order. You are the "maker" of an offer and you await a "taker" to accept. The "takers" pay the fees, the "maker" pays a reduced fee (depending on your transaction tier). The tradeoff is that limit orders may or may not be fulfilled; if you're selling X crypto at $Y value and no one likes your price, your sell order won't go anywhere.
 
 ### Basic investing strategy: Dollar Cost Averaging
 You have to be extremely lucky or extremely good to time the market perfectly. Rather than trying to achieve the perfect timing for when to execute a purchase just set up your investment on a regular schedule. Buy X amount every Y days. Sometimes the market will be up, sometimes down. But over time your cache will more closely reflect the average market price with volatile peaks and valleys averaged out.
@@ -15,12 +17,12 @@ This approach is common for retirement accounts; you invest a fixed amount into 
 ### Micro Dollar Cost Averaging for cryptos
 While I believe strongly in dollar cost averaging, the crypto world is so volatile that making a single, regular buy once a month is still leaving too much to chance. The market can swing 30%, 50%, even 100%+ in a single day. I'd rather invest $20 every day for a month than agonize over deciding on just the right time to do a single $600 buy.
 
-And because we can do buy orders on GDAX with no fees (so long as they're submitted as limit orders), there's no penalty for splitting an order down to smaller intervals.
+And because we can do buy orders on Coinbase Pro with no fees (so long as they're submitted as limit orders), there's no penalty for splitting an order down to smaller intervals.
 
 ### How far can you push micro dollar cost averaging?
-GDAX sets different minimum order sizes for each crypto. 
+Coinbase Pro sets different minimum order sizes for each crypto. 
 
-[Current minimums](https://blog.gdax.com/market-structure-update-2650072c6e3b) as of 2018-01-11 are:
+[Current minimums](https://blog.Coinbase Pro.com/market-structure-update-2650072c6e3b) as of 2018-01-11 are:
 ```
 BTC: 0.001
 ETH: 0.01
@@ -43,10 +45,10 @@ If the crypto price keeps increasing, eventually your schedule will run up again
 
 ## Technical Details
 ### Basic approach
-gdax_bot pulls the current market price, subtracts a small spread to generate a valid buy price, then submits the buy as a limit order.
+gdax_bot pulls the current bid and ask prices, averages the two to set our order's price, then submits it as a limit order.
 
-### Making a valid limit buy
-Buy orders will be rejected if they are at or above the lowest sell order (think: too far right on the order book) (see: https://stackoverflow.com/a/47447663). When the price is plummeting this is likely to happen. In this case gdax_bot will pause for a minute and then grab the latest price and re-place the order. It will currently attempt this 100 times before it gives up.
+### Making a valid limit order
+Buy orders will be rejected if they are at or above the lowest sell order (think: too far right on the order book) (see: https://stackoverflow.com/a/47447663) and vice-versa for sells. When the price is plummeting this is likely to happen. In this case gdax_bot will pause for a minute and then grab the latest price and re-place the order. It will currently attempt this 100 times before it gives up.
 
 _*Longer pauses are probably advantageous--if the price is crashing, you don't want to be rushing in._
 
@@ -63,11 +65,11 @@ There's plenty of info elsewhere for the hows and whys.
 pip install -r requirements.txt
 ```
 
-#### Create GDAX API key
-Try this out on GDAX's sandbox first. The sandbox is a test environment that is not connected to your actual fiat or crypto balances.
+#### Create Coinbase Pro API key
+Try this out on Coinbase Pro's sandbox first. The sandbox is a test environment that is not connected to your actual fiat or crypto balances.
 
-Log into your Coinbase/GDAX account in their test sandbox:
-https://public.sandbox.gdax.com
+Log into your Coinbase/Coinbase Pro account in their test sandbox:
+https://public.sandbox.pro.coinbase.com/
 
 Find and follow existing guides for creating an API key. Only grant the "Trade" permission. Note the passphrase, the new API key, and API key's secret.
 
@@ -89,11 +91,11 @@ _TODO: Add support to read these values from environment vars_
 
 
 #### Try a basic test run
-Run against the GDAX sandbox by including the ```-sandbox``` flag. Remember that the sandbox is just test data. The sandbox only supports BTC trading.
+Run against the Coinbase Pro sandbox by including the ```-sandbox``` flag. Remember that the sandbox is just test data. The sandbox only supports BTC trading.
 
-Activate your virtualenv and try a basic $100 USD BTC buy:
+Activate your virtualenv and try a basic buy of $100 USD worth of BTC:
 ```
-python gdax_bot.py -crypto BTC -fiat_amount 100.00 -sandbox -c ../settings-local.conf
+python gdax_bot.py BTC-USD BUY 100 USD -sandbox -c ../settings-local.conf
 ```
 
 Check the sandbox UI and you'll see your limit order listed. Unfortunately your order probably won't fill unless there's other activity in the sandbox.
@@ -103,24 +105,30 @@ Check the sandbox UI and you'll see your limit order listed. Unfortunately your 
 Run ```python gdax_bot.py -h``` for usage information:
 
 ```
-usage: gdax_bot.py [-h] [-crypto CRYPTO] [-fiat FIAT_TYPE] -fiat_amount
-                   FIAT_AMOUNT [-price_spread PRICE_SPREAD] [-sandbox]
-                   [-warn_after WARN_AFTER] [-j] [-c CONFIG_FILE]
+usage: gdax_bot.py [-h] [-sandbox] [-warn_after WARN_AFTER] [-j]
+                   [-c CONFIG_FILE]
+                   market_name {BUY,SELL} amount amount_currency
 
-This is a basic GDAX zero-fee buying bot
+        This is a basic Coinbase Pro DCA buying/selling bot.
+
+        ex:
+            BTC-USD BUY 14 USD          (buy $14 worth of BTC)
+            BTC-USD BUY 0.00125 BTC     (buy 0.00125 BTC)
+            ETH-BTC SELL 0.00125 BTC    (sell 0.00125 BTC worth of ETH)
+            ETH-BTC SELL 0.1 ETH        (sell 0.1 ETH)
+    
+
+positional arguments:
+  market_name           (e.g. BTC-USD, ETH-BTC, etc)
+  {BUY,SELL}
+  amount                The quantity to buy or sell in the amount_currency
+  amount_currency       The currency the amount is denominated in
 
 optional arguments:
   -h, --help            show this help message and exit
-  -crypto CRYPTO        Target cryptocurrency
-  -fiat FIAT_TYPE       Fiat currency type to fund buy order (e.g. USD)
-  -fiat_amount FIAT_AMOUNT
-                        Buy order size in fiat
-  -price_spread PRICE_SPREAD
-                        Amount below current market rate to set buy price
-  -sandbox              Run against GDAX sandbox
+  -sandbox              Run against sandbox, skips user confirmation prompt
   -warn_after WARN_AFTER
-                        Seconds to wait before sending an alert that an order
-                        isn't done
+                        secs to wait before sending an alert that an order isn't done
   -j, --job             Suppresses user confirmation prompt
   -c CONFIG_FILE, --config CONFIG_FILE
                         Override default config file location
@@ -132,21 +140,19 @@ This is meant to be run as a crontab to make regular purchases on a set schedule
 
 $50 USD of ETH every Monday at 17:23:
 ```
-23 17 * * 1 /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j -crypto ETH -fiat_amount 50.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+23 17 * * 1 /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j ETH-USD BUY 50.00 USD -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 *The ```-u``` option makes python output ```stdout``` and ```stderr``` unbuffered so that you can watch the progress in real time by running ```tail -f cron.log```.*
 
 €75 EUR of BTC every other day at 14:00:
 ```
-00 14 */2 * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j -crypto BTC -fiat EUR -fiat_amount 75.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+00 14 */2 * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j BTC-EUR BUY 75.00 EUR -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
 £5 GBP of LTC every day on every third hour at the 38th minute (i.e. 00:38, 03:38, 06:38, 09:38, 12:38, 15:38, 18:38, 21:38):
 ```
-38 */3 * * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j -crypto LTC -fiat GBP -fiat_amount 5.00 -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+38 */3 * * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j LTC-GBP BUY 5.00 GBP -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
-
-Your Coinbase/GDAX account must obviously have enough USD in it to cover the buy order/series of buy orders.
 
 
 ### Unfilled orders will happen
@@ -167,6 +173,55 @@ env EDITOR=nano crontab -e
 View the current crontab:
 ```
 crontab -l
+```
+
+#### Raspberry Pi notes
+Download and flash Raspbian to an SD card using Balena Etcher. You can use a "headless" version (Raspbian Lite) with no monitor, no keyboard, no mouse with the following steps.
+
+Remove and re-insert the SD card into the computer.
+
+Enable ssh:
+```
+touch /Volumes/boot/ssh
+```
+
+Preload wifi credentials. Begin editing a new file called:
+```
+nano /Volumes/boot/wpa_supplicant.conf
+```
+
+and customize for your network:
+```
+country=US
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+network={
+   ssid="your wifi network name"
+   psk="your wifi password"
+   key_mgmt=WPA-PSK
+}
+```
+
+Insert the SD card into the Raspberry Pi and power up. After about a minute try to ssh into it:
+```
+ssh pi@raspberrypi.local
+
+# default password is: raspberry
+```
+
+Once you're in change the default password:
+```
+passwd
+```
+
+Permanently enable ssh access (seems to revert to closing it off otherwise):
+```
+sudo systemctl enable ssh
+```
+
+Install automatic updates:
+```
+sudo apt-get install unattended-upgrades apt-listchanges
 ```
 
 
