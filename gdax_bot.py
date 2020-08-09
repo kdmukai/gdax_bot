@@ -199,8 +199,12 @@ if __name__ == "__main__":
         current_price = Decimal(ticker['price'])
         bid = Decimal(ticker['bid'])
         ask = Decimal(ticker['ask'])
+        if order_side == "buy":
+            rounding = decimal.ROUND_DOWN
+        else:
+            rounding = decimal.ROUND_UP
         midmarket_price = ((ask + bid) / Decimal('2.0')).quantize(quote_increment,
-                                                                  decimal.ROUND_DOWN)
+                                                                  rounding)
         print("bid: %s %s" % (bid, quote_currency))
         print("ask: %s %s" % (ask, quote_currency))
         print("midmarket_price: %s %s" % (midmarket_price, quote_currency))
@@ -236,8 +240,7 @@ if __name__ == "__main__":
 
         if "message" in result and "Post only mode" in result.get("message"):
             # Price moved away from valid order
-            print("Post only mode at %0.2f %s" % (offer_price, quote_currency))
-            continue
+            print("Post only mode at %f %s" % (offer_price, quote_currency))
 
         elif "message" in result:
             # Something went wrong if there's a 'message' field in response
@@ -251,10 +254,10 @@ if __name__ == "__main__":
             )
             exit()
 
-        if result and result["status"] != "rejected":
+        if result and "status" in result and result["status"] != "rejected":
             break
 
-        if result and result["status"] == "rejected":
+        if result and "status" in result and result["status"] == "rejected":
             # Rejected - usually because price was above lowest sell offer. Try
             #   again in the next loop.
             print("%s: %s Order rejected @ %f %s" % (get_timestamp(),
