@@ -216,9 +216,11 @@ if __name__ == "__main__":
         if amount_currency_is_quote_currency:
             # Convert 'amount' of the quote_currency to equivalent in base_currency
             base_currency_amount = (amount / current_price).quantize(base_increment)
+            amount_quantization = quote_increment
         else:
             # Already in base_currency
             base_currency_amount = amount.quantize(base_increment)
+            amount_quantization = base_increment
 
         print("base_currency_amount: %s %s" % (base_currency_amount, base_currency))
 
@@ -248,7 +250,7 @@ if __name__ == "__main__":
                 TopicArn=sns_topic,
                 Subject="Could not place %s %s order for %f %s" % (market_name,
                                                                    order_side,
-                                                                   amount,
+                                                                   amount.quantize(amount_quantization),
                                                                    amount_currency),
                 Message=json.dumps(result, sort_keys=True, indent=4)
             )
@@ -274,7 +276,7 @@ if __name__ == "__main__":
         sns.publish(
             TopicArn=sns_topic,
             Subject="Could not place %s %s order for %f %s after %d attempts" % (
-                market_name, order_side, amount, amount_currency, max_attempts
+                market_name, order_side, amount.quantize(amount_quantization), amount_currency, max_attempts
             ),
             Message=json.dumps(result, sort_keys=True, indent=4)
         )
@@ -299,7 +301,7 @@ if __name__ == "__main__":
                 Subject="%s %s order of %f %s OPEN/UNFILLED @ %s %s" % (
                     market_name,
                     order_side,
-                    amount,
+                    amount.quantize(amount_quantization),
                     amount_currency,
                     offer_price,
                     quote_currency
@@ -326,7 +328,7 @@ if __name__ == "__main__":
                 Subject="%s %s order of %f %s CANCELED @ %s %s" % (
                     market_name,
                     order_side,
-                    amount,
+                    amount.quantize(amount_quantization),
                     amount_currency,
                     offer_price,
                     quote_currency
@@ -342,7 +344,7 @@ if __name__ == "__main__":
         Subject="%s %s order of %f %s %s @ %s %s" % (
             market_name,
             order_side,
-            amount,
+            amount.quantize(amount_quantization),
             amount_currency,
             order["status"],
             offer_price,
@@ -355,7 +357,7 @@ if __name__ == "__main__":
         get_timestamp(),
         market_name,
         order_side,
-        amount,
+        amount.quantize(amount_quantization),
         amount_currency,
         order["status"],
         offer_price,
