@@ -216,11 +216,9 @@ if __name__ == "__main__":
         if amount_currency_is_quote_currency:
             # Convert 'amount' of the quote_currency to equivalent in base_currency
             base_currency_amount = (amount / current_price).quantize(base_increment)
-            amount_quantization = quote_increment
         else:
             # Already in base_currency
             base_currency_amount = amount.quantize(base_increment)
-            amount_quantization = base_increment
 
         print("base_currency_amount: %s %s" % (base_currency_amount, base_currency))
 
@@ -248,9 +246,9 @@ if __name__ == "__main__":
             # Something went wrong if there's a 'message' field in response
             sns.publish(
                 TopicArn=sns_topic,
-                Subject="Could not place %s %s order for %f %s" % (market_name,
+                Subject="Could not place %s %s order for %s %s" % (market_name,
                                                                    order_side,
-                                                                   amount.quantize(amount_quantization),
+                                                                   amount,
                                                                    amount_currency),
                 Message=json.dumps(result, sort_keys=True, indent=4)
             )
@@ -276,7 +274,7 @@ if __name__ == "__main__":
         sns.publish(
             TopicArn=sns_topic,
             Subject="Could not place %s %s order for %f %s after %d attempts" % (
-                market_name, order_side, amount.quantize(amount_quantization), amount_currency, max_attempts
+                market_name, order_side, amount, amount_currency, max_attempts
             ),
             Message=json.dumps(result, sort_keys=True, indent=4)
         )
@@ -298,10 +296,10 @@ if __name__ == "__main__":
         if total_wait_time > warn_after:
             sns.publish(
                 TopicArn=sns_topic,
-                Subject="%s %s order of %f %s OPEN/UNFILLED @ %s %s" % (
+                Subject="%s %s order of %s %s OPEN/UNFILLED @ %s %s" % (
                     market_name,
                     order_side,
-                    amount.quantize(amount_quantization),
+                    amount,
                     amount_currency,
                     offer_price,
                     quote_currency
@@ -325,10 +323,10 @@ if __name__ == "__main__":
             # Most likely the order was manually cancelled in the UI
             sns.publish(
                 TopicArn=sns_topic,
-                Subject="%s %s order of %f %s CANCELED @ %s %s" % (
+                Subject="%s %s order of %s %s CANCELED @ %s %s" % (
                     market_name,
                     order_side,
-                    amount.quantize(amount_quantization),
+                    amount,
                     amount_currency,
                     offer_price,
                     quote_currency
@@ -341,10 +339,10 @@ if __name__ == "__main__":
     # Order status is no longer pending!
     sns.publish(
         TopicArn=sns_topic,
-        Subject="%s %s order of %f %s %s @ %s %s" % (
+        Subject="%s %s order of %s %s %s @ %s %s" % (
             market_name,
             order_side,
-            amount.quantize(amount_quantization),
+            amount,
             amount_currency,
             order["status"],
             offer_price,
@@ -353,11 +351,11 @@ if __name__ == "__main__":
         Message=json.dumps(order, sort_keys=True, indent=4)
     )
 
-    print("%s: DONE: %s %s order of %f %s %s @ %s %s" % (
+    print("%s: DONE: %s %s order of %s %s %s @ %s %s" % (
         get_timestamp(),
         market_name,
         order_side,
-        amount.quantize(amount_quantization),
+        amount,
         amount_currency,
         order["status"],
         offer_price,
