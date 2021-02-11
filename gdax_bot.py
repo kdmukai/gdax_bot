@@ -118,6 +118,7 @@ if __name__ == "__main__":
     aws_access_key_id = config.get(config_section, 'AWS_ACCESS_KEY_ID')
     aws_secret_access_key = config.get(config_section, 'AWS_SECRET_ACCESS_KEY')
     sns_topic = config.get(config_section, 'SNS_TOPIC')
+    aws_region = config.get(config_section, 'AWS_REGION')
 
     # Instantiate public and auth API clients
     if not args.sandbox_mode:
@@ -161,7 +162,7 @@ if __name__ == "__main__":
         "sns",
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
-        region_name="us-east-1"     # N. Virginia
+        region_name=aws_region
     )
 
 
