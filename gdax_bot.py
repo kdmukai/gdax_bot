@@ -10,7 +10,7 @@ import math
 import sys
 import time
 
-import gdax
+import cbpro
 
 from decimal import Decimal
 
@@ -21,9 +21,14 @@ def get_timestamp():
 
 
 """
-    Basic Coinbase Pro DCA buy/sell bot that pulls the current market price, subtracts a
-        small spread to generate a valid price (see note below), then submits the trade as
-        a limit order.
+    Basic Coinbase Pro DCA buy/sell bot that executes a market order.
+    * CB Pro does not incentivize maker vs taker trading unless you trade over $50k in
+        a 30 day period (0.25% taker, 0.15% maker). Current fees are 0.50% if you make
+        less than $10k worth of trades over the last 30 days. Drops to 0.35% if you're
+        above $10k but below $50k in trades.
+    * Market orders can be issued for as little as $5 of value versus limit orders which
+        must be 0.001 BTC (e.g. $50 min if btc is at $50k). BTC-denominated market
+        orders must be at least 0.0001 BTC.
 
     This is meant to be run as a crontab to make regular buys/sells on a set schedule.
 """
@@ -63,7 +68,7 @@ parser.add_argument('-sandbox',
                     help="Run against sandbox, skips user confirmation prompt")
 
 parser.add_argument('-warn_after',
-                    default=3600,
+                    default=300,
                     action="store",
                     type=int,
                     dest="warn_after",
@@ -84,7 +89,7 @@ parser.add_argument('-c', '--config',
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    print("%s: STARTED: %s" % (get_timestamp(), args))
+    print(f"{get_timestamp()}: STARTED: {args}")
 
     market_name = args.market_name
     order_side = args.order_side.lower()
@@ -121,16 +126,16 @@ if __name__ == "__main__":
 
     # Instantiate public and auth API clients
     if not args.sandbox_mode:
-        auth_client = gdax.AuthenticatedClient(key, secret, passphrase)
+        auth_client = cbpro.AuthenticatedClient(key, secret, passphrase)
     else:
         # Use the sandbox API (requires a different set of API access credentials)
-        auth_client = gdax.AuthenticatedClient(
+        auth_client = cbpro.AuthenticatedClient(
             key,
             secret,
             passphrase,
             api_url="https://api-public.sandbox.pro.coinbase.com")
 
-    public_client = gdax.PublicClient()
+    public_client = cbpro.PublicClient()
 
     # Retrieve dict list of all trading pairs
     products = public_client.get_products()
@@ -149,12 +154,11 @@ if __name__ == "__main__":
             elif amount_currency == product.get("base_currency"):
                 amount_currency_is_quote_currency = False
             else:
-                raise Exception("amount_currency %s not in market %s" % (amount_currency,
-                                                                         market_name))
-            print(product)
+                raise Exception(f"amount_currency {amount_currency} not in market {market_name}")
+            print(json.dumps(product, indent=2))
 
-    print("base_min_size: %s" % base_min_size)
-    print("quote_increment: %s" % quote_increment)
+    print(f"base_min_size: {base_min_size}")
+    print(f"quote_increment: {quote_increment}")
 
     # Prep boto SNS client for email notifications
     sns = boto3.client(
@@ -164,156 +168,53 @@ if __name__ == "__main__":
         region_name="us-east-1"     # N. Virginia
     )
 
+    if amount_currency_is_quote_currency:
+        result = auth_client.place_market_order(
+            product_id=market_name,
+            side=order_side,
+            funds=float(amount.quantize(quote_increment))
+        )
+    else:
+        result = auth_client.place_market_order(
+            product_id=market_name,
+            side=order_side,
+            size=float(amount.quantize(base_increment))
+        )
 
-    """
-        Buy orders will be rejected if they are at or above the lowest sell order
-          (think: too far right on the order book). When the price is plummeting
-          this is likely to happen. In this case pause for Y amount of time and
-          then grab the latest price and re-place the order. Attempt X times before
-          giving up.
+    print(json.dumps(result, sort_keys=True, indent=4))
 
-        *Longer pauses are probably advantageous--if the price is crashing, you
-          don't want to be rushing in.
-
-        see: https://stackoverflow.com/a/47447663
-    """
-    max_attempts = 100
-    attempt_wait = 60
-    cur_attempt = 1
-    result = None
-    while cur_attempt <= max_attempts:
-        # Get the current price...
-        ticker = public_client.get_product_ticker(product_id=market_name)
-        if 'price' not in ticker:
-            # Cannot proceed with order. Coinbase Pro is likely under maintenance.
-            if 'message' in ticker:
-                sns.publish(
-                    TopicArn=sns_topic,
-                    Subject="%s order aborted" % (market_name),
-                    Message=ticker.get('message')
-                )
-                print(ticker.get('message'))
-            print("%s order aborted" % (market_name))
-            exit()
-
-        current_price = Decimal(ticker['price'])
-        bid = Decimal(ticker['bid'])
-        ask = Decimal(ticker['ask'])
-        if order_side == "buy":
-            rounding = decimal.ROUND_DOWN
-        else:
-            rounding = decimal.ROUND_UP
-        midmarket_price = ((ask + bid) / Decimal('2.0')).quantize(quote_increment,
-                                                                  rounding)
-        print("bid: %s %s" % (bid, quote_currency))
-        print("ask: %s %s" % (ask, quote_currency))
-        print("midmarket_price: %s %s" % (midmarket_price, quote_currency))
-
-        offer_price = midmarket_price
-        print("offer_price: %s %s" % (offer_price, quote_currency))
-
-        # Quantize by the base_increment limitation (in some cases this is as large as 1)
-        if amount_currency_is_quote_currency:
-            # Convert 'amount' of the quote_currency to equivalent in base_currency
-            base_currency_amount = (amount / current_price).quantize(base_increment)
-        else:
-            # Already in base_currency
-            base_currency_amount = amount.quantize(base_increment)
-
-        print("base_currency_amount: %s %s" % (base_currency_amount, base_currency))
-
-        if order_side == "buy":
-            result = auth_client.buy(type='limit',
-                                     post_only=True,             # Ensure that it's treated as a limit order
-                                     price=float(offer_price),   # price in quote_currency
-                                     size=float(base_currency_amount),  # quantity of base_currency to buy
-                                     product_id=market_name)
-
-        elif order_side == "sell":
-            result = auth_client.sell(type='limit',
-                                      post_only=True,             # Ensure that it's treated as a limit order
-                                      price=float(offer_price),   # price in quote_currency
-                                      size=float(base_currency_amount),  # quantity of base_currency to sell
-                                      product_id=market_name)
-
-        print(json.dumps(result, sort_keys=True, indent=4))
-
-        if "message" in result and "Post only mode" in result.get("message"):
-            # Price moved away from valid order
-            print("Post only mode at %f %s" % (offer_price, quote_currency))
-
-        elif "message" in result:
-            # Something went wrong if there's a 'message' field in response
-            sns.publish(
-                TopicArn=sns_topic,
-                Subject="Could not place %s %s order for %s %s" % (market_name,
-                                                                   order_side,
-                                                                   amount,
-                                                                   amount_currency),
-                Message=json.dumps(result, sort_keys=True, indent=4)
-            )
-            exit()
-
-        if result and "status" in result and result["status"] != "rejected":
-            break
-
-        if result and "status" in result and result["status"] == "rejected":
-            # Rejected - usually because price was above lowest sell offer. Try
-            #   again in the next loop.
-            print("%s: %s Order rejected @ %f %s" % (get_timestamp(),
-                                                     market_name,
-                                                     current_price,
-                                                     quote_currency))
-
-        time.sleep(attempt_wait)
-        cur_attempt += 1
-
-
-    if cur_attempt > max_attempts:
-        # Was never able to place an order
+    if "message" in result:
+        # Something went wrong if there's a 'message' field in response
         sns.publish(
             TopicArn=sns_topic,
-            Subject="Could not place %s %s order for %f %s after %d attempts" % (
-                market_name, order_side, amount, amount_currency, max_attempts
-            ),
+            Subject=f"Could not place {market_name} {order_side} order",
             Message=json.dumps(result, sort_keys=True, indent=4)
         )
         exit()
 
+    if result and "status" in result and result["status"] == "rejected":
+        print(f"{get_timestamp()}: {market_name} Order rejected")
 
     order = result
     order_id = order["id"]
-    print("order_id: " + order_id)
-
+    print(f"order_id: {order_id}")
 
     '''
-        Wait to see if the limit order was fulfilled.
+        Wait to see if the order was fulfilled.
     '''
-    wait_time = 60
+    wait_time = 5
     total_wait_time = 0
     while "status" in order and \
             (order["status"] == "pending" or order["status"] == "open"):
         if total_wait_time > warn_after:
             sns.publish(
                 TopicArn=sns_topic,
-                Subject="%s %s order of %s %s OPEN/UNFILLED @ %s %s" % (
-                    market_name,
-                    order_side,
-                    amount,
-                    amount_currency,
-                    offer_price,
-                    quote_currency
-                ),
+                Subject=f"{market_name} {order_side} order of {amount} {amount_currency} OPEN/UNFILLED",
                 Message=json.dumps(order, sort_keys=True, indent=4)
             )
             exit()
 
-        print("%s: Order %s still %s. Sleeping for %d (total %d)" % (
-            get_timestamp(),
-            order_id,
-            order["status"],
-            wait_time,
-            total_wait_time))
+        print(f"{get_timestamp()}: Order {order_id} still {order['status']}. Sleeping for {wait_time} (total {total_wait_time})")
         time.sleep(wait_time)
         total_wait_time += wait_time
         order = auth_client.get_order(order_id)
@@ -323,40 +224,21 @@ if __name__ == "__main__":
             # Most likely the order was manually cancelled in the UI
             sns.publish(
                 TopicArn=sns_topic,
-                Subject="%s %s order of %s %s CANCELED @ %s %s" % (
-                    market_name,
-                    order_side,
-                    amount,
-                    amount_currency,
-                    offer_price,
-                    quote_currency
-                ),
+                Subject=f"{market_name} {order_side} order of {amount} {amount_currency} CANCELLED",
                 Message=json.dumps(result, sort_keys=True, indent=4)
             )
             exit()
 
-
     # Order status is no longer pending!
+    print(json.dumps(order, indent=2))
+
+    market_price = (Decimal(order["executed_value"])/Decimal(order["filled_size"])).quantize(quote_increment)
+
+    subject = f"{market_name} {order_side} order of {amount} {amount_currency} {order['status']} @ {market_price} {quote_currency}"
+    print(subject)
     sns.publish(
         TopicArn=sns_topic,
-        Subject="%s %s order of %s %s %s @ %s %s" % (
-            market_name,
-            order_side,
-            amount,
-            amount_currency,
-            order["status"],
-            offer_price,
-            quote_currency
-        ),
+        Subject=subject,
         Message=json.dumps(order, sort_keys=True, indent=4)
     )
 
-    print("%s: DONE: %s %s order of %s %s %s @ %s %s" % (
-        get_timestamp(),
-        market_name,
-        order_side,
-        amount,
-        amount_currency,
-        order["status"],
-        offer_price,
-        quote_currency))
