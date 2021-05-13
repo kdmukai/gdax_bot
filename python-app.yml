@@ -1,0 +1,36 @@
+# This workflow will install Python dependencies, run gdax_bot script
+
+name: Run gdax_bot
+
+on:
+  # workflow_dispatch
+  schedule:
+    - cron: "0 15 * * *" # runs at 15:00 UTC everyday
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: execute script
+      run: |
+        python gdax_bot.py -j -gha BTC-USD BUY 5.00 USD
+        python gdax_bot.py -j -gha ETH-USD BUY 5.00 USD
+      env:
+        PASSPHRASE: ${{ secrets.PASSPHRASE}}
+        API_KEY: ${{ secrets.API_KEY}}
+        SECRET_KEY: ${{ secrets.SECRET_KEY}}
+        SNS_TOPIC: ${{ secrets.SNS_TOPIC}}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID}}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+        AWS_REGION: ${{ secrets.AWS_REGION}}
