@@ -9,6 +9,7 @@ import json
 import math
 import sys
 import time
+import os
 
 import cbpro
 
@@ -85,6 +86,11 @@ parser.add_argument('-c', '--config',
                     dest="config_file",
                     help="Override default config file location")
 
+parser.add_argument('-gha', '--github-actions',
+                    action="store_true",
+                    default=False,
+                    dest="github_actions",
+                    help="Run on Github Actions")
 
 
 if __name__ == "__main__":
@@ -99,6 +105,7 @@ if __name__ == "__main__":
     sandbox_mode = args.sandbox_mode
     job_mode = args.job_mode
     warn_after = args.warn_after
+    github_actions = args.github_actions
 
     if not sandbox_mode and not job_mode:
         if sys.version_info[0] < 3:
@@ -117,13 +124,22 @@ if __name__ == "__main__":
     config_section = 'production'
     if sandbox_mode:
         config_section = 'sandbox'
-    key = config.get(config_section, 'API_KEY')
-    passphrase = config.get(config_section, 'PASSPHRASE')
-    secret = config.get(config_section, 'SECRET_KEY')
-    aws_access_key_id = config.get(config_section, 'AWS_ACCESS_KEY_ID')
-    aws_secret_access_key = config.get(config_section, 'AWS_SECRET_ACCESS_KEY')
-    sns_topic = config.get(config_section, 'SNS_TOPIC')
-    aws_region = config.get(config_section, 'AWS_REGION')
+    if github_actions:
+        key = os.environ.get('API_KEY')
+        passphrase = os.environ.get('PASSPHRASE')
+        secret = os.environ.get('SECRET_KEY')
+        aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
+        aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        sns_topic = os.environ.get('SNS_TOPIC')
+        aws_region = os.environ.get('AWS_REGION')
+    else:
+        key = config.get(config_section, 'API_KEY')
+        passphrase = config.get(config_section, 'PASSPHRASE')
+        secret = config.get(config_section, 'SECRET_KEY')
+        aws_access_key_id = config.get(config_section, 'AWS_ACCESS_KEY_ID')
+        aws_secret_access_key = config.get(config_section, 'AWS_SECRET_ACCESS_KEY')
+        sns_topic = config.get(config_section, 'SNS_TOPIC')
+        aws_region = config.get(config_section, 'AWS_REGION')
 
     # Instantiate public and auth API clients
     if not args.sandbox_mode:
