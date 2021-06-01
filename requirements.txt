@@ -28,6 +28,6 @@ s3transfer==0.3.3
 six==1.10.0
 sortedcontainers==2.3.0
 traitlets==5.0.5
-urllib3==1.25.10
+urllib3==1.26.5
 wcwidth==0.2.5
 websocket-client==0.40.0
