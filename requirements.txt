@@ -11,7 +11,7 @@ decorator==4.4.2
 docutils==0.14
 futures==3.1.1
 idna==2.7
-ipython==7.20.0
+ipython==7.31.1
 ipython-genutils==0.2.0
 jedi==0.18.0
 jmespath==0.9.3
