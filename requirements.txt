@@ -23,7 +23,7 @@ ptyprocess==0.7.0
 Pygments==2.7.4
 pymongo==3.5.1
 python-dateutil==2.6.1
-requests==2.25.1
+requests==2.13.0
 s3transfer==0.3.3
 six==1.10.0
 sortedcontainers==2.3.0

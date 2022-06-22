@@ -1,7 +1,20 @@
-# gdax_bot
-A basic Coinbase Pro buying bot that completes trades in any of their available market pairings
+# gcp_gdax_bot
+
+A basic Coinbase Pro buying bot that trades in any of their available market pairings with instructions to deploy on google cloud for automated dollar cost averaging.
+
+
+This repo is forked from [kdmukai/gdax_bot](https://github.com/kdmukai/gdax_bot).
+I have updated some trivial parts of the code to make it easy to deploy on google cloud. <BR>Personally, I use this repo to trigger a `$2 BTC-USD buy every hour`.
 
 Relies on [gdax-python](https://github.com/danpaquin/gdax-python). Props to [danpaquin](https://github.com/danpaquin) and thanks!
+
+## Schedule automated recurring buys via Google Cloud
+Click [here](gcp_deploy_readme/README.md) for detailed instructions
+
+Click [here](btcbot/README.md) for detailed instructions on how to host it on Amazon Web Service (AWS)
+
+![System architecture](./docs/img/dca_system.png "GCP System Architecture")
+
 
 ## Trading Philosophy
 ### Coinbase Pro overview
@@ -20,7 +33,7 @@ While I believe strongly in dollar cost averaging, the crypto world is so volati
 And because we can do buy orders on Coinbase Pro with no fees (so long as they're submitted as limit orders), there's no penalty for splitting an order down to smaller intervals.
 
 ### How far can you push micro dollar cost averaging?
-Coinbase Pro sets different minimum order sizes for each crypto. 
+Coinbase Pro sets different minimum order sizes for each crypto.
 
 [Current minimums](https://blog.Coinbase Pro.com/market-structure-update-2650072c6e3b) as of 2018-01-11 are:
 ```
@@ -54,7 +67,7 @@ _*Longer pauses are probably advantageous--if the price is crashing, you don't w
 
 ### Setup
 #### Create a Coinbase account
-Use my referral code and we'll both get $10 worth of BTC:  
+Use my referral code and we'll both get $10 worth of BTC:
 https://www.coinbase.com/join/59384a753bfa9c00d764ac76
 
 #### Create a virtualenv
@@ -95,17 +108,17 @@ Run against the Coinbase Pro sandbox by including the ```-sandbox``` flag. Remem
 
 Activate your virtualenv and try a basic buy of $100 USD worth of BTC:
 ```
-python gdax_bot.py BTC-USD BUY 100 USD -sandbox -c ../settings-local.conf
+python gcp_gdax_bot_deploy.py BTC-USD BUY 100 USD -sandbox -c ../settings-local.conf
 ```
 
 Check the sandbox UI and you'll see your limit order listed. Unfortunately your order probably won't fill unless there's other activity in the sandbox.
 
 
 ### Usage
-Run ```python gdax_bot.py -h``` for usage information:
+Run ```python gcp_gdax_bot_deploy.py -h``` for usage information:
 
 ```
-usage: gdax_bot.py [-h] [-sandbox] [-warn_after WARN_AFTER] [-j]
+usage: gcp_gdax_bot_deploy.py [-h] [-sandbox] [-warn_after WARN_AFTER] [-j]
                    [-c CONFIG_FILE]
                    market_name {BUY,SELL} amount amount_currency
 
@@ -116,7 +129,7 @@ usage: gdax_bot.py [-h] [-sandbox] [-warn_after WARN_AFTER] [-j]
             BTC-USD BUY 0.00125 BTC     (buy 0.00125 BTC)
             ETH-BTC SELL 0.00125 BTC    (sell 0.00125 BTC worth of ETH)
             ETH-BTC SELL 0.1 ETH        (sell 0.1 ETH)
-    
+
 
 positional arguments:
   market_name           (e.g. BTC-USD, ETH-BTC, etc)
@@ -140,18 +153,18 @@ This is meant to be run as a crontab to make regular purchases on a set schedule
 
 $50 USD of ETH every Monday at 17:23:
 ```
-23 17 * * 1 /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j ETH-USD BUY 50.00 USD -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+23 17 * * 1 /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gcp_gdax_bot_deploy.py -j ETH-USD BUY 50.00 USD -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 *The ```-u``` option makes python output ```stdout``` and ```stderr``` unbuffered so that you can watch the progress in real time by running ```tail -f cron.log```.*
 
 €75 EUR of BTC every other day at 14:00:
 ```
-00 14 */2 * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j BTC-EUR BUY 75.00 EUR -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+00 14 */2 * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gcp_gdax_bot_deploy.py -j BTC-EUR BUY 75.00 EUR -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
 £5 GBP of LTC every day on every third hour at the 38th minute (i.e. 00:38, 03:38, 06:38, 09:38, 12:38, 15:38, 18:38, 21:38):
 ```
-38 */3 * * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j LTC-GBP BUY 5.00 GBP -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+38 */3 * * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gcp_gdax_bot_deploy.py -j LTC-GBP BUY 5.00 GBP -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
 
@@ -159,7 +172,7 @@ $50 USD of ETH every Monday at 17:23:
 The volatility may quickly carry the market away from you. Here we see a bunch of unfilled orders that are well below the current market price of $887.86:
 ![alt text](https://github.com/kdmukai/gdax_bot/blob/master/docs/img/gdax_unfilled_orders.png "Unfilled gdax_bot orders")
 
-The gdax_bot will keep checking on the status of the order for up to an hour, after which it will report it as OPEN/UNFILLED. Hopefully the market will cool down again and return to your order's price, at which point it will fill (though gdax_bot will not send a notification). You can also manually cancel the order to free up the reserved fiat again. 
+The gdax_bot will keep checking on the status of the order for up to an hour, after which it will report it as OPEN/UNFILLED. Hopefully the market will cool down again and return to your order's price, at which point it will fill (though gdax_bot will not send a notification). You can also manually cancel the order to free up the reserved fiat again.
 
 I would recommend patience and let the unfilled order ride for a few hours or days. With micro dollar cost averaging it doesn't really matter if you miss a few buy orders.
 

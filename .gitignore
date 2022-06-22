@@ -1,6 +1,12 @@
 
 cron*
+.python-version
 
+# private config files
 settings.conf
-
+settings-local.conf
 *.bat
+
+# packages
+btcbot/*.zip
+btcbot/package
