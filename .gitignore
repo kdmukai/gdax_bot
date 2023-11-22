@@ -10,3 +10,7 @@ settings-local.conf
 # packages
 btcbot/*.zip
 btcbot/package
+
+#packages
+cb_advance_trade/*.zip
+cb_advance_trade/package
